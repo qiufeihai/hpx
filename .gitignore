@@ -1,0 +1,17 @@
+target/
+
+.DS_Store
+.idea/
+.vscode/
+
+.env
+.env.*
+
+*.log
+
+*.pem
+*.key
+*.crt
+certs/
+
+.trae/
