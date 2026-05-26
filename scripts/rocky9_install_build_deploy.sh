@@ -6,7 +6,7 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
-dnf -y install git ca-certificates curl gcc gcc-c++ make cmake perl pkgconf-pkg-config acl
+dnf -y install git ca-certificates curl gcc gcc-c++ make cmake perl pkgconf-pkg-config
 
 if ! command -v rustup >/dev/null 2>&1; then
   curl -fsSL https://sh.rustup.rs | sh -s -- -y
@@ -18,7 +18,6 @@ RUST_TOOLCHAIN="${RUST_TOOLCHAIN:-1.83.0}"
 rustup toolchain install "${RUST_TOOLCHAIN}"
 rustup default "${RUST_TOOLCHAIN}"
 
-APP_ROOT="${APP_ROOT:-/opt/hpx}"
 BIN_PATH="${BIN_PATH:-/usr/local/bin/hpx}"
 CONF_PATH="${CONF_PATH:-/etc/hpx/hpx.conf}"
 SERVICE_PATH="${SERVICE_PATH:-/etc/systemd/system/hpx.service}"
@@ -33,8 +32,6 @@ if [[ -z "${DOMAIN}" ]]; then
   exit 1
 fi
 
-id -u hpx >/dev/null 2>&1 || useradd -r -s /sbin/nologin -d "${APP_ROOT}" hpx
-install -d -m 0755 -o hpx -g hpx "${APP_ROOT}"
 install -d -m 0755 /etc/hpx
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -59,17 +56,6 @@ EOF
   chmod 0644 "${CONF_PATH}"
 fi
 
-setfacl -m u:hpx:--x /root || true
-setfacl -m u:hpx:--x /root/.acme.sh || true
-setfacl -m u:hpx:--x "/root/.acme.sh/${DOMAIN}_ecc" || true
-setfacl -m d:u:hpx:r-- "/root/.acme.sh/${DOMAIN}_ecc" || true
-if [[ -f "/root/.acme.sh/${DOMAIN}_ecc/${DOMAIN}.key" ]]; then
-  setfacl -m u:hpx:r-- "/root/.acme.sh/${DOMAIN}_ecc/${DOMAIN}.key" || true
-fi
-if [[ -f "/root/.acme.sh/${DOMAIN}_ecc/fullchain.cer" ]]; then
-  setfacl -m u:hpx:r-- "/root/.acme.sh/${DOMAIN}_ecc/fullchain.cer" || true
-fi
-
 cat > "${SERVICE_PATH}" <<'EOF'
 [Unit]
 Description=hpx (VLESS over H2+TLS)
@@ -78,7 +64,6 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=hpx
 ExecStart=/usr/local/bin/hpx --config /etc/hpx/hpx.conf
 Restart=always
 RestartSec=1
